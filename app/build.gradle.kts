@@ -19,6 +19,18 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Добавьте эту секцию
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }
+
+    // Добавьте эту секцию
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
     }
 
     compileOptions {
