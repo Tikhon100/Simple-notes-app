@@ -20,18 +20,26 @@ android {
             useSupportLibrary = true
         }
 
-        // Добавьте эту секцию
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
+
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_STL=c++_shared")
+                cppFlags("-std=c++17")
+            }
+        }
     }
 
-    // Добавьте эту секцию
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
+
+    ndkVersion = "25.1.8937393" // Укажите версию вашего NDK
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
