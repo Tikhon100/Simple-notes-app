@@ -2,6 +2,7 @@ package com.example.lab2.screens
 
 import android.app.DatePickerDialog
 import android.widget.Toast
+
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -73,22 +74,24 @@ fun CreateNoteBottomSheet(
     var description by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<Date?>(null) }
     val context = LocalContext.current
-    val calendar = Calendar.getInstance()
-    val dateFormatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    val calendar = remember { Calendar.getInstance() }
+    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            calendar.set(year, month, dayOfMonth)
-            selectedDate = calendar.time
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
+    // Создаем DatePickerDialog внутри remember
+    val datePickerDialog = remember {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                calendar.set(year, month, dayOfMonth)
+                selectedDate = calendar.time
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -152,10 +155,11 @@ fun CreateNoteBottomSheet(
                         isLoading = true
                         errorMessage = null
 
+                        val currentDate = selectedDate ?: Date()
                         val note = Note(
-                            title = title,
-                            description = description,
-                            date = selectedDate ?: Date(),
+                            title = title.trim(),
+                            description = description.trim(),
+                            date = currentDate,
                             status = 0
                         )
 
@@ -163,12 +167,14 @@ fun CreateNoteBottomSheet(
                             note = note,
                             onSuccess = {
                                 isLoading = false
-                                Toast.makeText(
-                                    context,
-                                    "Заметка успешно создана",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                onDismiss() // Изменили на onDismiss
+                                context.applicationContext?.let { ctx ->
+                                    Toast.makeText(
+                                        ctx,
+                                        "Заметка успешно создана",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                onDismiss()
                             },
                             onError = { exception ->
                                 isLoading = false
@@ -192,7 +198,6 @@ fun CreateNoteBottomSheet(
         }
     }
 }
-
 
 class NoteViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -315,8 +320,7 @@ fun NoteItem(
     var showContextMenu by remember { mutableStateOf(false) }
     var showDetailsDialog by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
-    val dateFormatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-
+    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()) }
 
     Card(
         modifier = Modifier
@@ -327,20 +331,11 @@ fun NoteItem(
                     onLongPress = { offset ->
                         pressOffset = DpOffset(offset.x.toDp(), offset.y.toDp())
                         showContextMenu = true
+                    },
+                    onDoubleTap = {
+                        showDetailsDialog = true
                     }
                 )
-            }
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        if (event.type == PointerEventType.Press) {
-                            if (event.changes.size == 2) {
-                                showDetailsDialog = true
-                            }
-                        }
-                    }
-                }
             }
     ) {
         Column(
@@ -378,16 +373,8 @@ fun NoteItem(
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
-                        DetailRow(
-                            label = "Название:",
-                            content = note.title
-                        )
-
-                        DetailRow(
-                            label = "Описание:",
-                            content = note.description
-                        )
-
+                        DetailRow(label = "Название:", content = note.title)
+                        DetailRow(label = "Описание:", content = note.description)
                         DetailRow(
                             label = "Дата:",
                             content = dateFormatter.format(note.date)
@@ -422,7 +409,7 @@ fun NoteItem(
                     )
                 },
                 onClick = {
-                    onStatusChange(note.copy(status = 1))
+                    onStatusChange(note.copy(status = if (note.status == 0) 1 else 0))
                     showContextMenu = false
                 },
                 leadingIcon = {
@@ -448,7 +435,6 @@ fun NoteItem(
         }
     }
 }
-
 @Composable
 private fun DetailRow(
     label: String,
