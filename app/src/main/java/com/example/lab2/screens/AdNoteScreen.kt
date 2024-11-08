@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
+import com.example.lab2.NativeLib
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -321,6 +322,8 @@ fun NoteItem(
     var showDetailsDialog by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()) }
+    val nativeLib = remember { NativeLib() }
+
 
     Card(
         modifier = Modifier
@@ -409,7 +412,7 @@ fun NoteItem(
                     )
                 },
                 onClick = {
-                    onStatusChange(note.copy(status = if (note.status == 0) 1 else 0))
+                    onStatusChange(note.copy(status = nativeLib.invertNumber(note.status)))
                     showContextMenu = false
                 },
                 leadingIcon = {
